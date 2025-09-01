@@ -1,136 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Falcons Chat</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚡ Falcons Chat ⚡</title>
   <style>
     body {
-      margin: 0;
+      background: black;
+      color: #00ffea;
       font-family: 'Courier New', monospace;
-      background: radial-gradient(circle at center, #0a0a0a, #000000 80%);
-      color: #00fff7;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .chat-container {
-      width: 95%;
-      max-width: 600px;
-      height: 95vh;
+      margin: 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      padding: 15px;
-      background: rgba(10, 10, 10, 0.9);
-      border-radius: 20px;
-      border: 2px solid #0ff;
-      box-shadow: 0 0 30px #0ff, 0 0 60px #f0f;
+      height: 100vh;
     }
-    .glitch {
+    header {
       text-align: center;
+      padding: 1rem;
       font-size: 1.5rem;
       font-weight: bold;
-      margin-bottom: 10px;
-      text-shadow: 2px 2px #f0f, -2px -2px #ff0;
-      animation: glitch 2s infinite;
+      color: #fff;
+      text-shadow: 0 0 5px #00f7ff, 0 0 15px #0ff, 0 0 20px #00f7ff;
+      animation: glitch 1.5s infinite;
     }
     @keyframes glitch {
-      0% { text-shadow: 2px 2px #f0f, -2px -2px #ff0; }
-      50% { text-shadow: -2px -2px #f0f, 2px 2px #ff0; }
-      100% { text-shadow: 2px 2px #f0f, -2px -2px #ff0; }
+      0% { text-shadow: 2px 2px #ff00de, -2px -2px #00f7ff; }
+      20% { text-shadow: -2px 0 #ff00de, 2px 2px #00f7ff; }
+      40% { text-shadow: 2px -2px #ff00de, -2px 2px #00f7ff; }
+      60% { text-shadow: -2px 2px #ff00de, 2px -2px #00f7ff; }
+      80% { text-shadow: 2px 2px #ff00de, -2px -2px #00f7ff; }
+      100% { text-shadow: -2px 0 #ff00de, 2px 2px #00f7ff; }
     }
-    .chat-box {
+    #chat {
       flex: 1;
       overflow-y: auto;
-      padding: 10px;
-      font-size: 1rem;
-      color: #00ffea;
-      text-shadow: 0 0 5px #0ff;
-      border-radius: 10px;
-      background: rgba(0,0,0,0.6);
+      padding: 1rem;
     }
-    .message {
-      margin: 6px 0;
-      word-wrap: break-word;
+    .msg {
+      margin: 0.5rem 0;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      max-width: 80%;
     }
-    .message.user { color: #f0f; text-align: right; }
-    .message.bot { color: #0ff; text-align: left; }
-    .chat-input {
+    .user {
+      background: rgba(0, 255, 200, 0.2);
+      align-self: flex-end;
+      text-align: right;
+    }
+    .bot {
+      background: rgba(255, 0, 222, 0.2);
+      align-self: flex-start;
+      text-align: left;
+    }
+    #input-area {
       display: flex;
-      margin-top: 10px;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
+      padding: 0.5rem;
       background: #111;
+    }
+    #input {
+      flex: 1;
+      padding: 0.5rem;
+      background: #000;
+      border: 1px solid #0ff;
       color: #0ff;
-      font-size: 1rem;
-      box-shadow: 0 0 10px #0ff;
+      border-radius: 8px;
     }
-    .chat-input button {
-      margin-left: 10px;
-      padding: 12px 20px;
+    button {
+      margin-left: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #ff00de;
+      color: white;
       border: none;
-      border-radius: 10px;
-      background: #0ff;
-      color: #000;
+      border-radius: 8px;
       font-weight: bold;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .chat-input button:hover {
-      background: #f0f;
-      color: #fff;
-      box-shadow: 0 0 20px #f0f;
+      text-shadow: 0 0 5px #fff, 0 0 10px #ff00de;
     }
   </style>
 </head>
 <body>
-  <div class="chat-container">
-    <div class="glitch">⚡ Falcons Chat ⚡</div>
-    <div class="chat-box" id="chat-box"></div>
-    <div class="chat-input">
-      <input type="text" id="user-input" placeholder="Type your message..." onkeypress="if(event.key==='Enter'){sendMessage()}">
-      <button onclick="sendMessage()">Send</button>
-    </div>
+  <header>⚡ Falcons Chat ⚡</header>
+  <div id="chat"></div>
+  <div id="input-area">
+    <input type="text" id="input" placeholder="Type your message..." />
+    <button onclick="sendMessage()">Send</button>
   </div>
 
   <script>
-    const SERVER_URL = "/api/chat"; // works automatically on Vercel
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("input");
+
+    function addMessage(text, sender) {
+      const div = document.createElement("div");
+      div.className = `msg ${sender}`;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
 
     async function sendMessage() {
-      const input = document.getElementById("user-input");
-      const message = input.value.trim();
-      if (!message) return;
-
-      appendMessage("user", message);
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage(text, "user");
       input.value = "";
 
       try {
-        const response = await fetch(SERVER_URL, {
+        const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: [{ role: "user", content: message }] })
+          body: JSON.stringify({ message: text })
         });
-
-        const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content || "[No response]";
-        appendMessage("bot", reply);
-      } catch (err) {
-        appendMessage("bot", "⚠️ Error: " + err.message);
+        const data = await res.json();
+        addMessage(data.reply, "bot");
+      } catch (e) {
+        addMessage("⚠️ Failed to connect to server", "bot");
       }
-    }
-
-    function appendMessage(role, text) {
-      const box = document.getElementById("chat-box");
-      const msg = document.createElement("div");
-      msg.className = "message " + role;
-      msg.textContent = text;
-      box.appendChild(msg);
-      box.scrollTop = box.scrollHeight;
     }
   </script>
 </body>
