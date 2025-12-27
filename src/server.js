@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import { askFalcon } from "./ai.js";
+import { executeArtifact } from "./execute.js";
 
 dotenv.config();
 
@@ -17,20 +18,26 @@ app.post("/run", async (req, res) => {
   try {
     const result = await askFalcon(prompt);
 
-    res.json({
-      message: result.explanation,
-      artifact: {
+    let execution = null;
+
+    if (result.run === true) {
+      execution = await executeArtifact({
         language: result.language,
         filename: result.filename,
-        run: result.run,
-        code: result.code
-      }
+        code: result.code,
+        run: result.run
+      });
+    }
+
+    res.json({
+      explanation: result.explanation,
+      execution
     });
 
   } catch (err) {
     res.status(500).json({
-      error: "AI processing failed",
-      details: err.message
+      error: "Execution failed",
+      details: err.error || err.message
     });
   }
 });
