@@ -1,4 +1,4 @@
-# NVIDIA API Key Checker 
+# NVIDIA API Key Checker
 
 Test your `nvapi-*` keys from [build.nvidia.com](https://build.nvidia.com) with a full server-side fallback chain.
 
