@@ -1,0 +1,9 @@
+{
+  "name": "nvidia-key-checker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NVIDIA API key tester with Python backend",
+  "scripts": {
+    "build": "echo 'No build step needed – static site'"
+  }
+}
