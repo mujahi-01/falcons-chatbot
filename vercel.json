@@ -1,4 +1,7 @@
 {
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "public",
   "functions": {
     "api/check.py": {
       "runtime": "@vercel/python@3.0.0",
