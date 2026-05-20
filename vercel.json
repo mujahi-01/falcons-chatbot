@@ -2,12 +2,6 @@
   "framework": null,
   "buildCommand": "",
   "outputDirectory": "public",
-  "functions": {
-    "api/check.py": {
-      "runtime": "@vercel/python@4.1.0",
-      "maxDuration": 25
-    }
-  },
   "rewrites": [
     { "source": "/api/check", "destination": "/api/check.py" }
   ]
