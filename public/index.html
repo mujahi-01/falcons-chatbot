@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NVIDIA API Key Tester & Auto Model Checker</title>
+    <style>
+        :root {
+            --stone-50: #faf7f2;
+            --stone-100: #f5f0e8;
+            --stone-200: #ede4d6;
+            --stone-300: #e0d5c3;
+            --stone-400: #c9b99d;
+            --stone-500: #b8a081;
+            --stone-600: #9c8062;
+            --stone-700: #7d654c;
+            --stone-800: #5c4a3a;
+            --stone-900: #3d3228;
+            --amber-100: #fef3e4;
+            --amber-200: #fde6c8;
+            --amber-300: #fbd094;
+            --amber-400: #f5b85c;
+            --amber-500: #e89e3a;
+            --amber-600: #c97d24;
+            --rose-100: #fef0ed;
+            --rose-200: #fdd9d3;
+            --rose-400: #f08b7a;
+            --emerald-400: #5db89a;
+            --emerald-500: #3d9e7c;
+            --glass-bg: rgba(255,255,255,0.52);
+            --glass-bg-strong: rgba(255,255,255,0.68);
+            --glass-bg-light: rgba(255,255,255,0.35);
+            --glass-border: rgba(255,255,255,0.45);
+            --glass-border-strong: rgba(255,255,255,0.7);
+            --glass-shadow: 0 8px 40px rgba(61,50,40,0.10);
+            --glass-shadow-lg: 0 20px 60px rgba(61,50,40,0.13);
+            --blur-amount: 18px;
+            --blur-amount-heavy: 28px;
+            --radius-xl: 20px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --transition-smooth: 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI','Inter',system-ui,-apple-system,sans-serif;
+            background:
+                radial-gradient(ellipse at 15% 10%, #fdf6ed 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 90%, #f3e9d8 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 50%, #faf5ec 0%, #ede1cf 40%, #e8d9c4 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        body::before {
+            content:'';
+            position:fixed; inset:0;
+            pointer-events:none; z-index:0; opacity:0.06;
+            background-image:
+                repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(120,90,60,0.12) 2px,rgba(120,90,60,0.12) 3px),
+                repeating-linear-gradient(90deg,transparent,transparent 2px,rgba(120,90,60,0.08) 2px,rgba(120,90,60,0.08) 3px);
+        }
+        .decorative-orb {
+            position:fixed; border-radius:50%; pointer-events:none; z-index:0;
+            filter:blur(80px); opacity:0.35; animation:orbFloat 16s ease-in-out infinite;
+        }
+        .decorative-orb.orb-1 { width:320px;height:320px;background:#f5d5b8;top:-80px;left:-60px; }
+        .decorative-orb.orb-2 { width:260px;height:260px;background:#e8ceb0;bottom:-60px;right:-40px;animation-delay:-7s;animation-duration:18s; }
+        .decorative-orb.orb-3 { width:200px;height:200px;background:#f0ddd0;top:50%;left:55%;animation-delay:-4s;animation-duration:20s; }
+        @keyframes orbFloat {
+            0%,100%{transform:translate(0,0) scale(1);}
+            25%{transform:translate(30px,-40px) scale(1.12);}
+            50%{transform:translate(-20px,20px) scale(0.94);}
+            75%{transform:translate(-35px,-15px) scale(1.06);}
+        }
+        .main-container {
+            position:relative; z-index:1; width:100%; max-width:820px;
+            background:var(--glass-bg);
+            backdrop-filter:blur(var(--blur-amount));
+            -webkit-backdrop-filter:blur(var(--blur-amount));
+            border:1.5px solid var(--glass-border);
+            border-radius:var(--radius-xl);
+            box-shadow:var(--glass-shadow-lg);
+            padding:36px 32px 32px;
+            transition:all var(--transition-smooth);
+        }
+        .main-container::before {
+            content:''; position:absolute; inset:-2px;
+            border-radius:calc(var(--radius-xl) + 2px); padding:2px;
+            background:linear-gradient(135deg,rgba(200,160,110,0.35),rgba(220,190,150,0.2),rgba(180,140,100,0.3),rgba(210,175,135,0.25),rgba(195,155,115,0.35));
+            background-size:400% 400%; animation:borderGlow 8s ease-in-out infinite;
+            -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+            -webkit-mask-composite:xor; mask-composite:exclude;
+            pointer-events:none; z-index:-1;
+        }
+        @keyframes borderGlow {
+            0%,100%{background-position:0% 50%;}
+            25%{background-position:100% 0%;}
+            50%{background-position:100% 100%;}
+            75%{background-position:0% 100%;}
+        }
+        .header { text-align:center; margin-bottom:24px; }
+        .header .icon-row { display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px; }
+        .header .nvidia-logo {
+            width:36px;height:36px;
+            background:linear-gradient(135deg,#76b900,#5a9e00);
+            border-radius:10px; display:flex;align-items:center;justify-content:center;
+            color:#fff; font-weight:900; font-size:18px; letter-spacing:-1px;
+            box-shadow:0 4px 14px rgba(118,185,0,0.3);
+        }
+        .header h1 { font-size:1.75rem;font-weight:700;color:var(--stone-900);letter-spacing:-0.3px; }
+        .header .subtitle { font-size:0.9rem;color:var(--stone-600);font-weight:500; }
+
+        /* Backend badge */
+        .backend-badge {
+            display:inline-flex;align-items:center;gap:5px;
+            background:rgba(118,185,0,0.12);border:1px solid rgba(118,185,0,0.3);
+            border-radius:20px;padding:4px 10px;font-size:0.75rem;font-weight:600;
+            color:#4a7a00;margin-top:6px;
+        }
+
+        .form-section { margin-bottom:18px; }
+        .form-label {
+            display:flex;align-items:center;gap:7px;
+            font-weight:650;font-size:0.9rem;color:var(--stone-800);margin-bottom:7px;
+        }
+        .form-label .label-icon { width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:14px; }
+        .input-row { display:flex;gap:10px;align-items:stretch;flex-wrap:wrap; }
+        .input-row .input-wrapper { flex:1;position:relative; }
+        .glass-input, .glass-textarea {
+            width:100%;padding:13px 16px;
+            background:var(--glass-bg-light);
+            backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+            border:1.5px solid var(--glass-border);
+            border-radius:var(--radius-md);
+            font-size:0.95rem;
+            font-family:'SF Mono','Cascadia Code','Consolas','Monaco',monospace;
+            color:var(--stone-900);transition:all var(--transition-smooth);outline:none;
+        }
+        .glass-input::placeholder,.glass-textarea::placeholder {
+            color:var(--stone-400);font-family:'Segoe UI','Inter',system-ui,sans-serif;
+        }
+        .glass-input:focus,.glass-textarea:focus {
+            border-color:var(--amber-400);
+            background:rgba(255,255,255,0.6);
+            box-shadow:0 0 0 5px rgba(200,150,90,0.08),0 4px 20px rgba(0,0,0,0.05);
+        }
+        .glass-textarea { resize:vertical;min-height:90px;font-family:'Segoe UI','Inter',system-ui,sans-serif;line-height:1.5; }
+        .btn {
+            display:inline-flex;align-items:center;justify-content:center;gap:7px;
+            padding:12px 20px;border-radius:var(--radius-sm);
+            font-weight:600;font-size:0.9rem;cursor:pointer;border:none;
+            transition:all var(--transition-smooth);letter-spacing:0.2px;
+            white-space:nowrap;font-family:'Segoe UI','Inter',system-ui,sans-serif;
+        }
+        .btn:active { transform:scale(0.97); }
+        .btn:disabled { opacity:0.5;cursor:not-allowed;transform:none; }
+        .btn-glass {
+            background:var(--glass-bg-strong);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+            border:1.5px solid var(--glass-border-strong);color:var(--stone-800);
+            box-shadow:0 2px 12px rgba(0,0,0,0.05);
+        }
+        .btn-glass:hover:not(:disabled) { background:rgba(255,255,255,0.8);border-color:var(--stone-300);box-shadow:0 4px 20px rgba(0,0,0,0.09);transform:translateY(-1px); }
+        .btn-primary { background:linear-gradient(135deg,#c98d4e,#b8783a);color:#fff;border:1.5px solid rgba(255,255,255,0.3);box-shadow:0 4px 18px rgba(180,120,55,0.3); }
+        .btn-primary:hover:not(:disabled) { background:linear-gradient(135deg,#d49a5c,#c58545);box-shadow:0 6px 24px rgba(180,120,55,0.4);transform:translateY(-2px); }
+        .btn-emerald { background:linear-gradient(135deg,#5db89a,#3d9e7c);color:#fff;border:1.5px solid rgba(255,255,255,0.3);box-shadow:0 4px 18px rgba(61,158,124,0.3); }
+        .btn-emerald:hover:not(:disabled) { background:linear-gradient(135deg,#6cc8a8,#4aaf8c);box-shadow:0 6px 24px rgba(61,158,124,0.4);transform:translateY(-2px); }
+        .btn-warning { background:linear-gradient(135deg,#e8a840,#d18b2c);color:#fff;border:1.5px solid rgba(255,255,255,0.3);box-shadow:0 4px 18px rgba(200,120,40,0.3); }
+        .btn-warning:hover:not(:disabled) { background:linear-gradient(135deg,#f0b850,#dc9838);box-shadow:0 6px 24px rgba(200,120,40,0.4);transform:translateY(-2px); }
+        .btn-danger { background:linear-gradient(135deg,#e05545,#c43a2a);color:#fff;border:1.5px solid rgba(255,255,255,0.3);box-shadow:0 4px 18px rgba(200,60,50,0.3); }
+        .btn-danger:hover:not(:disabled) { background:linear-gradient(135deg,#ec6655,#d44535);transform:translateY(-2px); }
+        .btn-sm { padding:9px 15px;font-size:0.82rem;border-radius:7px; }
+        .status-row { display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap; }
+        .status-badge {
+            display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+            border-radius:20px;font-size:0.82rem;font-weight:600;
+            backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+            transition:all 0.4s ease;
+        }
+        .status-badge.checking { background:rgba(255,240,210,0.7);border:1.5px solid rgba(230,180,80,0.5);color:#8a6d30; }
+        .status-badge.success  { background:rgba(220,250,230,0.7);border:1.5px solid rgba(100,200,140,0.5);color:#2d6b45; }
+        .status-badge.warning  { background:rgba(255,240,210,0.7);border:1.5px solid rgba(230,180,80,0.5);color:#8a6d30; }
+        .status-badge.error    { background:rgba(255,225,220,0.7);border:1.5px solid rgba(240,120,100,0.5);color:#8b3a30; }
+        .status-dot { width:9px;height:9px;border-radius:50%;display:inline-block;animation:pulse 1.8s ease-in-out infinite; }
+        .status-dot.dot-checking { background:#e8a830;animation-duration:0.8s; }
+        .status-dot.dot-success  { background:#3d9e7c;animation:none; }
+        .status-dot.dot-warning  { background:#e8a830;animation:none; }
+        .status-dot.dot-error    { background:#e05545;animation:none; }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);} }
+
+        .response-area {
+            margin-top:20px;padding:18px 20px;
+            background:var(--glass-bg-light);
+            backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+            border:1.5px solid var(--glass-border);
+            border-radius:var(--radius-md);
+            min-height:60px;max-height:520px;overflow-y:auto;
+            font-size:0.88rem;color:var(--stone-800);line-height:1.6;
+            white-space:pre-wrap;word-break:break-word;
+            transition:all var(--transition-smooth);display:none;
+        }
+        .response-area.visible { display:block;animation:fadeSlideIn 0.4s ease-out; }
+        .response-meta { font-size:0.75rem;color:var(--stone-500);margin-bottom:10px;display:flex;gap:14px;flex-wrap:wrap; }
+        @keyframes fadeSlideIn { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
+
+        /* Log panel */
+        .log-panel {
+            margin-top:12px;
+            background:rgba(30,25,20,0.88);
+            border-radius:var(--radius-sm);
+            padding:14px 16px;
+            font-family:'SF Mono','Cascadia Code','Consolas',monospace;
+            font-size:0.78rem;line-height:1.7;
+            color:#c8bfb0;
+            max-height:260px;overflow-y:auto;
+        }
+        .log-line { display:block; }
+        .log-line.ok     { color:#76e09a; }
+        .log-line.fail   { color:#f07070; }
+        .log-line.warn   { color:#f5c842; }
+        .log-line.try    { color:#7ec8f5; }
+        .log-line.info   { color:#c8bfb0; }
+        .log-line.detail { color:#8a7f72; }
+        .log-line.done   { color:#b08fff;font-weight:bold; }
+
+        /* Verdict card */
+        .verdict-card {
+            display:flex;align-items:flex-start;gap:14px;
+            padding:16px 18px;border-radius:var(--radius-md);
+            margin-bottom:12px;
+        }
+        .verdict-card.valid   { background:rgba(200,255,220,0.5);border:1.5px solid rgba(80,200,120,0.4); }
+        .verdict-card.invalid { background:rgba(255,210,205,0.5);border:1.5px solid rgba(230,100,90,0.4); }
+        .verdict-card.rate    { background:rgba(255,245,210,0.5);border:1.5px solid rgba(230,180,60,0.4); }
+        .verdict-icon { font-size:2rem;line-height:1; }
+        .verdict-body h3 { font-size:1rem;font-weight:700;color:var(--stone-900);margin-bottom:4px; }
+        .verdict-body p  { font-size:0.82rem;color:var(--stone-700);line-height:1.5; }
+        .verdict-body code { font-family:'SF Mono','Cascadia Code',monospace;font-size:0.8rem;background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:4px; }
+
+        /* Auto-check table */
+        .auto-results-table { width:100%;border-collapse:collapse;margin-top:10px;font-size:0.8rem; }
+        .auto-results-table th,.auto-results-table td { padding:8px 10px;text-align:left;border-bottom:1px solid rgba(200,180,155,0.3); }
+        .auto-results-table th { background:rgba(255,255,255,0.45);font-weight:700;color:var(--stone-700);position:sticky;top:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px); }
+        .auto-results-table .model-name { font-family:'SF Mono','Cascadia Code',monospace;font-size:0.78rem; }
+        .auto-results-table .status-success { color:#2d6b45;font-weight:600; }
+        .auto-results-table .status-fail    { color:#8b3a30;font-weight:600; }
+
+        .progress-container { width:100%;background:rgba(200,180,155,0.2);border-radius:10px;margin:10px 0;height:8px;overflow:hidden; }
+        .progress-bar { height:100%;width:0%;background:linear-gradient(90deg,#c98d4e,#e8a840);transition:width 0.2s ease;border-radius:10px; }
+
+        .spinner { display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.5);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite; }
+        .spinner-dark { border-color:rgba(150,120,80,0.3);border-top-color:var(--stone-700); }
+        @keyframes spin { to{transform:rotate(360deg);} }
+
+        /* Modal */
+        .modal-overlay { position:fixed;inset:0;background:rgba(40,30,20,0.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1000;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease-out;padding:20px; }
+        .modal-overlay.hidden { display:none; }
+        @keyframes fadeIn { from{opacity:0;}to{opacity:1;} }
+        .modal { background:var(--glass-bg-strong);backdrop-filter:blur(var(--blur-amount-heavy));-webkit-backdrop-filter:blur(var(--blur-amount-heavy));border:1.5px solid var(--glass-border-strong);border-radius:var(--radius-xl);box-shadow:var(--glass-shadow-lg),0 0 0 1px rgba(255,255,255,0.3) inset;width:100%;max-width:700px;max-height:75vh;display:flex;flex-direction:column;animation:modalSlideIn 0.35s cubic-bezier(0.22,0.61,0.36,1);overflow:hidden; }
+        @keyframes modalSlideIn { from{opacity:0;transform:translateY(30px) scale(0.96);}to{opacity:1;transform:translateY(0) scale(1);} }
+        .modal-header { padding:18px 22px;border-bottom:1.5px solid rgba(200,180,155,0.3);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);flex-shrink:0; }
+        .modal-header h3 { font-size:1.1rem;font-weight:700;color:var(--stone-900); }
+        .modal-close { width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(180,160,140,0.4);background:rgba(255,255,255,0.5);cursor:pointer;font-size:1.1rem;color:var(--stone-700);display:flex;align-items:center;justify-content:center;transition:all var(--transition-smooth);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px); }
+        .modal-close:hover { background:rgba(255,255,255,0.8);border-color:var(--stone-400);color:var(--stone-900);transform:rotate(90deg); }
+        .modal-search { padding:14px 22px;border-bottom:1.5px solid rgba(200,180,155,0.2);flex-shrink:0; }
+        .modal-search input { width:100%;padding:11px 16px;background:rgba(255,255,255,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1.5px solid rgba(200,180,155,0.4);border-radius:25px;font-size:0.9rem;outline:none;color:var(--stone-900); }
+        .modal-search input:focus { border-color:var(--amber-400);box-shadow:0 0 0 4px rgba(200,150,90,0.07);background:rgba(255,255,255,0.7); }
+        .modal-body { overflow-y:auto;flex:1;padding:10px 16px 16px; }
+        .provider-group { margin-bottom:16px; }
+        .provider-header { font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--stone-500);padding:8px 8px 6px;margin-bottom:4px;border-bottom:1px solid rgba(200,180,155,0.2);position:sticky;top:0;background:rgba(250,247,242,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:2;border-radius:4px; }
+        .model-chips { display:flex;flex-wrap:wrap;gap:7px; }
+        .model-chip { padding:8px 14px;border-radius:20px;font-size:0.8rem;cursor:pointer;font-weight:500;transition:all var(--transition-smooth);background:rgba(255,255,255,0.45);border:1.2px solid rgba(200,180,155,0.35);color:var(--stone-700);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);white-space:nowrap; }
+        .model-chip:hover { background:rgba(255,255,255,0.75);border-color:var(--amber-400);color:var(--stone-900);transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,0.07); }
+        .model-chip.selected-chip { background:linear-gradient(135deg,#fef3e4,#fde6c8);border-color:var(--amber-400);color:#7d5a2d;font-weight:650;box-shadow:0 2px 10px rgba(200,140,60,0.2); }
+        .no-results { text-align:center;padding:30px;color:var(--stone-500);font-style:italic; }
+        .toast { position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--glass-bg-strong);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid var(--glass-border-strong);border-radius:25px;padding:12px 24px;font-weight:600;font-size:0.88rem;color:var(--stone-900);box-shadow:var(--glass-shadow-lg);z-index:2000;transition:transform 0.4s cubic-bezier(0.22,0.61,0.36,1);display:flex;align-items:center;gap:8px; }
+        .toast.show { transform:translateX(-50%) translateY(0); }
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:transparent;border-radius:10px; }
+        ::-webkit-scrollbar-thumb { background:rgba(180,155,125,0.4);border-radius:10px; }
+        ::-webkit-scrollbar-thumb:hover { background:rgba(160,130,100,0.6); }
+        @media(max-width:640px) {
+            .main-container { padding:22px 16px 20px;border-radius:var(--radius-lg); }
+            .input-row { flex-direction:column;gap:8px; }
+            .header h1 { font-size:1.4rem; }
+            .btn { width:100%;justify-content:center; }
+            .modal { max-height:85vh;border-radius:var(--radius-lg); }
+            .model-chip { font-size:0.74rem;padding:6px 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="decorative-orb orb-1"></div>
+<div class="decorative-orb orb-2"></div>
+<div class="decorative-orb orb-3"></div>
+
+<div class="main-container">
+    <div class="header">
+        <div class="icon-row">
+            <div class="nvidia-logo">N</div>
+            <h1>NVIDIA API Explorer</h1>
+        </div>
+        <p class="subtitle">Test your key &bull; Browse 120+ models &bull; Auto‑check all models</p>
+        <div class="backend-badge">🛡️ Check Key uses server-side fallback chain (6 methods)</div>
+    </div>
+
+    <div class="form-section">
+        <label class="form-label" for="apiKeyInput"><span class="label-icon">🔑</span> API Key</label>
+        <div class="input-row">
+            <div class="input-wrapper">
+                <input type="password" id="apiKeyInput" class="glass-input" placeholder="nvapi-..." autocomplete="off" spellcheck="false">
+            </div>
+            <button class="btn btn-glass btn-sm" id="toggleKeyBtn" title="Show/Hide API Key">👁️</button>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <label class="form-label" for="modelInput"><span class="label-icon">🤖</span> Model Name <span style="font-size:0.75rem;color:var(--stone-500);margin-left:4px;">(for Send Prompt & Auto-Check)</span></label>
+        <div class="input-row">
+            <div class="input-wrapper">
+                <input type="text" id="modelInput" class="glass-input" placeholder="e.g., meta/llama-3.1-8b-instruct" autocomplete="off" spellcheck="false">
+            </div>
+            <button class="btn btn-glass btn-sm" id="showModelsBtn">📋 Show Models</button>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <label class="form-label" for="promptInput"><span class="label-icon">💬</span> Prompt</label>
+        <textarea id="promptInput" class="glass-textarea" placeholder="Enter your prompt here... (used for Send Prompt and Auto‑Check)" rows="3"></textarea>
+    </div>
+
+    <div class="input-row" style="margin-top:6px;">
+        <button class="btn btn-emerald" id="checkKeyBtn">✅ Check Key</button>
+        <button class="btn btn-primary" id="sendPromptBtn">🚀 Send Prompt</button>
+        <button class="btn btn-warning" id="autoCheckBtn">⚡ Auto‑Check All</button>
+        <button class="btn btn-danger btn-sm" id="stopAutoBtn" style="display:none;">⏹ Stop</button>
+        <button class="btn btn-glass btn-sm" id="clearBtn">🗑️ Clear</button>
+    </div>
+
+    <div style="margin-top:10px;display:flex;align-items:center;gap:15px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--stone-700);cursor:pointer;">
+            <input type="checkbox" id="nvidiaOnlyCheckbox" checked> NVIDIA models only
+        </label>
+        <span style="font-size:0.78rem;color:var(--stone-500);" id="modelCountLabel"></span>
+    </div>
+
+    <div class="status-row" id="statusRow" style="display:none;">
+        <span class="status-badge checking" id="statusBadge">
+            <span class="status-dot dot-checking" id="statusDot"></span>
+            <span id="statusText">Checking...</span>
+        </span>
+        <span style="font-size:0.8rem;color:var(--stone-500);" id="responseTime"></span>
+    </div>
+
+    <div class="response-area" id="responseArea">
+        <div class="response-meta" id="responseMeta"></div>
+        <div id="responseContent"></div>
+    </div>
+
+    <div class="progress-container" id="progressContainer" style="display:none;">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div id="progressText" style="font-size:0.78rem;color:var(--stone-500);margin-top:4px;display:none;"></div>
+</div>
+
+<!-- Model modal -->
+<div class="modal-overlay hidden" id="modalOverlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>📋 Available Models <span style="font-weight:400;font-size:0.8rem;color:var(--stone-500);">(120+)</span></h3>
+            <button class="modal-close" id="modalCloseBtn">✕</button>
+        </div>
+        <div class="modal-search">
+            <input type="text" id="modalSearchInput" placeholder="🔍 Search models by name or provider..." autocomplete="off">
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+    // ── Model Catalog (120+) ─────────────────────────────────────────────────
+    const modelCatalog = [
+        {name:"nvidia/nemotron-4-340b-instruct",provider:"NVIDIA"},
+        {name:"nvidia/nemotron-4-340b-reward",provider:"NVIDIA"},
+        {name:"nvidia/nemotron-4-340b-sft",provider:"NVIDIA"},
+        {name:"nvidia/llama-3.1-nemotron-70b-instruct",provider:"NVIDIA"},
+        {name:"nvidia/llama-3.1-nemotron-70b-reward",provider:"NVIDIA"},
+        {name:"nvidia/nemotron-mini-4b-instruct",provider:"NVIDIA"},
+        {name:"nvidia/nemotron-nano-4b-v1.0",provider:"NVIDIA"},
+        {name:"nvidia/nemotron-4-mini-hindi-4b-instruct",provider:"NVIDIA"},
+        {name:"nvidia/nv-embed-qa-4",provider:"NVIDIA"},
+        {name:"nvidia/nv-embed-v1",provider:"NVIDIA"},
+        {name:"nvidia/nv-embed-qa-mistral-7b",provider:"NVIDIA"},
+        {name:"nvidia/nv-embedcode-7b-v1",provider:"NVIDIA"},
+        {name:"nvidia/nv-embed-qa-e5-v5",provider:"NVIDIA"},
+        {name:"nvidia/parakeet-ctc-0.6b",provider:"NVIDIA"},
+        {name:"nvidia/parakeet-tdt-1.1b",provider:"NVIDIA"},
+        {name:"nvidia/canary-1b",provider:"NVIDIA"},
+        {name:"nvidia/usdcode-llama-3",provider:"NVIDIA"},
+        {name:"nvidia/nv-dinov2-large",provider:"NVIDIA"},
+        {name:"nvidia/neva-22b",provider:"NVIDIA"},
+        {name:"nvidia/vila",provider:"NVIDIA"},
+        {name:"meta/llama-3.1-8b-instruct",provider:"Meta"},
+        {name:"meta/llama-3.1-70b-instruct",provider:"Meta"},
+        {name:"meta/llama-3.1-405b-instruct",provider:"Meta"},
+        {name:"meta/llama-3.2-1b-instruct",provider:"Meta"},
+        {name:"meta/llama-3.2-3b-instruct",provider:"Meta"},
+        {name:"meta/llama-3.3-70b-instruct",provider:"Meta"},
+        {name:"meta/llama-3.2-11b-vision-instruct",provider:"Meta"},
+        {name:"meta/llama-3.2-90b-vision-instruct",provider:"Meta"},
+        {name:"meta/codellama-70b",provider:"Meta"},
+        {name:"meta/llama-3.1-8b",provider:"Meta"},
+        {name:"meta/llama-3.1-70b",provider:"Meta"},
+        {name:"meta/llama-3.1-405b",provider:"Meta"},
+        {name:"microsoft/phi-3-mini-4k-instruct",provider:"Microsoft"},
+        {name:"microsoft/phi-3-mini-128k-instruct",provider:"Microsoft"},
+        {name:"microsoft/phi-3-small-8k-instruct",provider:"Microsoft"},
+        {name:"microsoft/phi-3-small-128k-instruct",provider:"Microsoft"},
+        {name:"microsoft/phi-3-medium-4k-instruct",provider:"Microsoft"},
+        {name:"microsoft/phi-3-medium-128k-instruct",provider:"Microsoft"},
+        {name:"microsoft/phi-3.5-mini-instruct",provider:"Microsoft"},
+        {name:"microsoft/phi-3.5-moe-instruct",provider:"Microsoft"},
+        {name:"microsoft/phi-3.5-vision-instruct",provider:"Microsoft"},
+        {name:"microsoft/phi-4-mini-instruct",provider:"Microsoft"},
+        {name:"microsoft/phi-4",provider:"Microsoft"},
+        {name:"mistralai/mistral-7b-instruct-v0.3",provider:"Mistral AI"},
+        {name:"mistralai/mistral-7b-instruct-v0.2",provider:"Mistral AI"},
+        {name:"mistralai/mixtral-8x7b-instruct-v0.1",provider:"Mistral AI"},
+        {name:"mistralai/mixtral-8x22b-instruct-v0.1",provider:"Mistral AI"},
+        {name:"mistralai/mistral-large-2-instruct",provider:"Mistral AI"},
+        {name:"mistralai/mistral-nemo-12b-instruct",provider:"Mistral AI"},
+        {name:"mistralai/mistral-small-3.1-24b-instruct",provider:"Mistral AI"},
+        {name:"mistralai/codestral-22b-instruct",provider:"Mistral AI"},
+        {name:"mistralai/mathstral-7b-v0.1",provider:"Mistral AI"},
+        {name:"mistralai/mistral-large",provider:"Mistral AI"},
+        {name:"mistralai/mistral-small",provider:"Mistral AI"},
+        {name:"mistralai/ministral-8b",provider:"Mistral AI"},
+        {name:"google/gemma-2b",provider:"Google"},
+        {name:"google/gemma-7b",provider:"Google"},
+        {name:"google/gemma-2-2b-it",provider:"Google"},
+        {name:"google/gemma-2-9b-it",provider:"Google"},
+        {name:"google/gemma-2-27b-it",provider:"Google"},
+        {name:"google/codegemma-7b",provider:"Google"},
+        {name:"google/codegemma-1.1-7b",provider:"Google"},
+        {name:"google/gemma-3-1b-it",provider:"Google"},
+        {name:"google/gemma-3-4b-it",provider:"Google"},
+        {name:"google/gemma-3-12b-it",provider:"Google"},
+        {name:"google/gemma-3-27b-it",provider:"Google"},
+        {name:"google/shieldgemma-9b",provider:"Google"},
+        {name:"google/paligemma-3b-mix-224",provider:"Google"},
+        {name:"google/paligemma-3b-ft",provider:"Google"},
+        {name:"anthropic/claude-3-opus",provider:"Anthropic"},
+        {name:"anthropic/claude-3-sonnet",provider:"Anthropic"},
+        {name:"anthropic/claude-3-haiku",provider:"Anthropic"},
+        {name:"anthropic/claude-3.5-sonnet",provider:"Anthropic"},
+        {name:"anthropic/claude-3.5-haiku",provider:"Anthropic"},
+        {name:"anthropic/claude-3.7-sonnet",provider:"Anthropic"},
+        {name:"deepseek-ai/deepseek-coder-6.7b-instruct",provider:"DeepSeek"},
+        {name:"deepseek-ai/deepseek-v3",provider:"DeepSeek"},
+        {name:"deepseek-ai/deepseek-r1",provider:"DeepSeek"},
+        {name:"deepseek-ai/deepseek-r1-distill-llama-8b",provider:"DeepSeek"},
+        {name:"deepseek-ai/deepseek-r1-distill-qwen-7b",provider:"DeepSeek"},
+        {name:"deepseek-ai/deepseek-r1-distill-qwen-14b",provider:"DeepSeek"},
+        {name:"deepseek-ai/deepseek-v2-lite",provider:"DeepSeek"},
+        {name:"qwen/qwen-2-7b-instruct",provider:"Qwen"},
+        {name:"qwen/qwen-2-72b-instruct",provider:"Qwen"},
+        {name:"qwen/qwen-2.5-7b-instruct",provider:"Qwen"},
+        {name:"qwen/qwen-2.5-32b-instruct",provider:"Qwen"},
+        {name:"qwen/qwen-2.5-72b-instruct",provider:"Qwen"},
+        {name:"qwen/qwen-2.5-coder-7b-instruct",provider:"Qwen"},
+        {name:"qwen/qwen-2.5-coder-32b-instruct",provider:"Qwen"},
+        {name:"qwen/qwen-2.5-math-7b-instruct",provider:"Qwen"},
+        {name:"qwen/qwen-vl-plus",provider:"Qwen"},
+        {name:"qwen/qwen-vl-max",provider:"Qwen"},
+        {name:"qwen/qwen-2.5-1.5b-instruct",provider:"Qwen"},
+        {name:"qwen/qwen-2.5-3b-instruct",provider:"Qwen"},
+        {name:"databricks/dbrx-instruct",provider:"Databricks"},
+        {name:"databricks/dbrx-base",provider:"Databricks"},
+        {name:"snowflake/arctic",provider:"Snowflake"},
+        {name:"snowflake/arctic-instruct",provider:"Snowflake"},
+        {name:"writer/palmyra-med-70b",provider:"Writer"},
+        {name:"writer/palmyra-fin-70b",provider:"Writer"},
+        {name:"writer/palmyra-x-004",provider:"Writer"},
+        {name:"cohere/command-r-plus",provider:"Cohere"},
+        {name:"cohere/command-r",provider:"Cohere"},
+        {name:"cohere/command",provider:"Cohere"},
+        {name:"cohere/embed-multilingual-v3",provider:"Cohere"},
+        {name:"ai21labs/jamba-1.5-large-instruct",provider:"AI21 Labs"},
+        {name:"ai21labs/jamba-1.5-mini-instruct",provider:"AI21 Labs"},
+        {name:"ai21labs/jamba-instruct",provider:"AI21 Labs"},
+        {name:"upstage/solar-10.7b-instruct",provider:"Upstage"},
+        {name:"upstage/solar-pro-preview-instruct",provider:"Upstage"},
+        {name:"upstage/solar-mini-instruct",provider:"Upstage"},
+        {name:"nousresearch/hermes-2-pro-llama-3-8b",provider:"Nous Research"},
+        {name:"nousresearch/hermes-3-llama-3.1-405b",provider:"Nous Research"},
+        {name:"nousresearch/hermes-3-llama-3.1-70b",provider:"Nous Research"},
+        {name:"cognitivecomputations/dolphin-mixtral-8x7b",provider:"Cognitive Comp."},
+        {name:"cognitivecomputations/dolphin-llama-3-8b",provider:"Cognitive Comp."},
+        {name:"adept/persimmon-8b",provider:"Adept"},
+        {name:"stabilityai/stable-diffusion-xl",provider:"Stability AI"},
+        {name:"stabilityai/stable-diffusion-3-medium",provider:"Stability AI"},
+        {name:"stabilityai/stable-video-diffusion",provider:"Stability AI"},
+        {name:"black-forest-labs/flux-1-dev",provider:"Black Forest Labs"},
+        {name:"black-forest-labs/flux-1-schnell",provider:"Black Forest Labs"},
+        {name:"openai/gpt-4o",provider:"OpenAI (via NVIDIA)"},
+        {name:"openai/gpt-4o-mini",provider:"OpenAI (via NVIDIA)"},
+        {name:"ibm/granite-3.0-8b-instruct",provider:"IBM"},
+        {name:"ibm/granite-3.1-8b-instruct",provider:"IBM"},
+        {name:"allenai/olmo-7b",provider:"Allen AI"},
+        {name:"tiiuae/falcon-7b-instruct",provider:"TII UAE"},
+        {name:"bigcode/starcoder2-15b",provider:"BigCode"},
+        {name:"mediatek/breeze-7b-instruct",provider:"MediaTek"},
+        {name:"rakuten/rakutenai-7b-instruct",provider:"Rakuten"},
+        {name:"yentinglin/taiwan-llama-13b",provider:"Yenting Lin"},
+    ];
+
+    // ── DOM refs ─────────────────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+    const apiKeyInput      = $('apiKeyInput');
+    const toggleKeyBtn     = $('toggleKeyBtn');
+    const modelInput       = $('modelInput');
+    const showModelsBtn    = $('showModelsBtn');
+    const promptInput      = $('promptInput');
+    const checkKeyBtn      = $('checkKeyBtn');
+    const sendPromptBtn    = $('sendPromptBtn');
+    const autoCheckBtn     = $('autoCheckBtn');
+    const stopAutoBtn      = $('stopAutoBtn');
+    const clearBtn         = $('clearBtn');
+    const statusRow        = $('statusRow');
+    const statusBadge      = $('statusBadge');
+    const statusDot        = $('statusDot');
+    const statusText       = $('statusText');
+    const responseTime     = $('responseTime');
+    const responseArea     = $('responseArea');
+    const responseMeta     = $('responseMeta');
+    const responseContent  = $('responseContent');
+    const progressContainer= $('progressContainer');
+    const progressBar      = $('progressBar');
+    const progressText     = $('progressText');
+    const nvidiaOnly       = $('nvidiaOnlyCheckbox');
+    const modelCountLabel  = $('modelCountLabel');
+    const modalOverlay     = $('modalOverlay');
+    const modalBody        = $('modalBody');
+    const modalSearchInput = $('modalSearchInput');
+    const modalCloseBtn    = $('modalCloseBtn');
+    const toast            = $('toast');
+
+    let isKeyVisible = false;
+    let toastTimer = null;
+    let currentSelectedModel = null;
+    let autoCheckAbortController = null;
+    let isAutoChecking = false;
+
+    // ── Toast ────────────────────────────────────────────────────────────────
+    function showToast(msg, emoji='📝') {
+        if (toastTimer) clearTimeout(toastTimer);
+        toast.textContent = `${emoji} ${msg}`;
+        toast.classList.add('show');
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    // ── Toggle key visibility ─────────────────────────────────────────────────
+    toggleKeyBtn.addEventListener('click', () => {
+        isKeyVisible = !isKeyVisible;
+        apiKeyInput.type = isKeyVisible ? 'text' : 'password';
+        toggleKeyBtn.textContent = isKeyVisible ? '🙈' : '👁️';
+    });
+
+    // ── Status ───────────────────────────────────────────────────────────────
+    function setStatus(state, msg) {
+        statusRow.style.display = 'flex';
+        statusBadge.className = 'status-badge ' + state;
+        statusDot.className = 'status-dot dot-' + state;
+        statusText.textContent = msg;
+    }
+    function hideStatus() { statusRow.style.display = 'none'; responseTime.textContent = ''; }
+
+    function showResponse(metaHtml, contentEl) {
+        responseMeta.innerHTML = metaHtml;
+        responseContent.innerHTML = '';
+        if (typeof contentEl === 'string') {
+            responseContent.textContent = contentEl;
+        } else {
+            responseContent.appendChild(contentEl);
+        }
+        responseArea.classList.add('visible');
+    }
+    function hideResponse() { responseArea.classList.remove('visible'); }
+
+    // ── Classify log line ────────────────────────────────────────────────────
+    function logClass(line) {
+        const l = line.trimStart();
+        if (l.startsWith('OK'))   return 'ok';
+        if (l.startsWith('FAIL')) return 'fail';
+        if (l.startsWith('WARN')) return 'warn';
+        if (l.startsWith('TRY'))  return 'try';
+        if (l.startsWith('INFO')) return 'info';
+        if (l.startsWith('DONE')) return 'done';
+        return 'detail';
+    }
+
+    function buildLogPanel(lines) {
+        const panel = document.createElement('div');
+        panel.className = 'log-panel';
+        lines.forEach(line => {
+            const span = document.createElement('span');
+            span.className = `log-line ${logClass(line)}`;
+            span.textContent = line;
+            panel.appendChild(span);
+        });
+        return panel;
+    }
+
+    function buildVerdictCard(data) {
+        const card = document.createElement('div');
+        const isRateLimit = data.status_code === 429;
+        if (!data.valid) {
+            card.className = 'verdict-card invalid';
+            card.innerHTML = `
+                <div class="verdict-icon">❌</div>
+                <div class="verdict-body">
+                    <h3>Key Invalid or Unreachable</h3>
+                    <p>${data.error || 'All methods failed.'}</p>
+                </div>`;
+        } else if (isRateLimit) {
+            card.className = 'verdict-card rate';
+            card.innerHTML = `
+                <div class="verdict-icon">⚠️</div>
+                <div class="verdict-body">
+                    <h3>Key is VALID — Rate Limited</h3>
+                    <p>Method: <code>${data.method}</code> &nbsp;|&nbsp; URL: <code>${data.base_url}</code><br>
+                    Wait a few minutes or upgrade your NVIDIA NIM plan.</p>
+                </div>`;
+        } else {
+            card.className = 'verdict-card valid';
+            card.innerHTML = `
+                <div class="verdict-icon">✅</div>
+                <div class="verdict-body">
+                    <h3>Key is VALID</h3>
+                    <p>Method: <code>${data.method}</code> &nbsp;|&nbsp; ${data.elapsed_ms}ms<br>
+                    URL: <code>${data.base_url}</code><br>
+                    Model: <code>${data.model}</code><br>
+                    Reply: <em>"${(data.reply||'').substring(0,120)}"</em></p>
+                </div>`;
+        }
+        return card;
+    }
+
+    // ── CHECK KEY — routes through /api/check backend ─────────────────────────
+    async function checkApiKey() {
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) { showToast('Enter your NVIDIA API key first', '⚠️'); apiKeyInput.focus(); return; }
+
+        hideResponse();
+        setStatus('checking', 'Running full fallback chain (6 methods)…');
+        responseTime.textContent = '';
+        setBtns(true);
+
+        const t0 = performance.now();
+        try {
+            const res = await fetch('/api/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: apiKey }),
+            });
+            const data = await res.json();
+            const elapsed = Math.round(performance.now() - t0);
+            responseTime.textContent = `⏱️ ${elapsed}ms total`;
+
+            if (data.valid && data.status_code !== 429) {
+                setStatus('success', '✅ Key is VALID');
+                showToast('API key is valid! 🎉', '✅');
+            } else if (data.valid && data.status_code === 429) {
+                setStatus('warning', '⚠️ Key valid — Rate Limited');
+                showToast('Key is valid but rate limited', '⚠️');
+            } else {
+                setStatus('error', '❌ Key check failed');
+                showToast('Key check failed — see log below', '❌');
+            }
+
+            const wrap = document.createElement('div');
+            wrap.appendChild(buildVerdictCard(data));
+            if (data.log && data.log.length) wrap.appendChild(buildLogPanel(data.log));
+            showResponse(
+                `<strong>Method:</strong> ${data.method||'—'} &bull; <strong>URL:</strong> ${data.base_url||'—'} &bull; <strong>Model:</strong> ${data.model||'—'}`,
+                wrap
+            );
+        } catch (err) {
+            const elapsed = Math.round(performance.now() - t0);
+            responseTime.textContent = `⏱️ ${elapsed}ms`;
+            setStatus('error', '❌ Network error reaching /api/check');
+            showToast('Could not reach backend', '❌');
+            showResponse('<strong>Network Error</strong>', `Could not reach /api/check\n${err.message}\n\nMake sure the app is deployed on Vercel (not opened as a local HTML file).`);
+        } finally {
+            setBtns(false);
+        }
+    }
+
+    // ── SEND PROMPT — direct to NVIDIA (browser fetch) ───────────────────────
+    async function callNvidiaAPI(apiKey, model, messages, maxTokens=100) {
+        // Try primary URL first, fallback to integrate URL
+        const urls = [
+            'https://api.nvidia.com/v1/chat/completions',
+            'https://integrate.api.nvidia.com/v1/chat/completions',
+        ];
+        let lastErr;
+        for (const url of urls) {
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.7 }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    const msg = data.error?.message || data.message || `HTTP ${res.status}`;
+                    throw new Error(msg);
+                }
+                return data;
+            } catch(e) { lastErr = e; }
+        }
+        throw lastErr;
+    }
+
+    async function sendPrompt() {
+        const apiKey = apiKeyInput.value.trim();
+        const model  = modelInput.value.trim();
+        const prompt = promptInput.value.trim();
+        if (!apiKey) { showToast('Enter your NVIDIA API key', '⚠️'); apiKeyInput.focus(); return; }
+        if (!model)  { showToast('Enter or select a model', '⚠️'); modelInput.focus(); return; }
+        if (!prompt) { showToast('Enter a prompt', '⚠️'); promptInput.focus(); return; }
+
+        hideResponse();
+        setStatus('checking', 'Sending prompt…');
+        setBtns(true);
+        const t0 = performance.now();
+        try {
+            const data = await callNvidiaAPI(apiKey, model, [{ role:'user', content:prompt }], 1024);
+            const elapsed = Math.round(performance.now() - t0);
+            setStatus('success', '✅ Response received');
+            responseTime.textContent = `⏱️ ${elapsed}ms`;
+            const modelUsed = data.model || model;
+            const content = data.choices?.[0]?.message?.content || '(No content)';
+            const tokIn = data.usage?.prompt_tokens || '?';
+            const tokOut = data.usage?.completion_tokens || '?';
+            showResponse(
+                `<strong>Model:</strong> <code>${modelUsed}</code> &bull; <strong>Tokens:</strong> ${tokIn} in / ${tokOut} out &bull; ${elapsed}ms`,
+                content
+            );
+            showToast('Response received!', '🚀');
+        } catch(err) {
+            const elapsed = Math.round(performance.now() - t0);
+            responseTime.textContent = `⏱️ ${elapsed}ms`;
+            setStatus('error', '❌ Request failed');
+            showResponse('<strong>❌ Request Failed</strong>',
+                `Error: ${err.message}\n\nTips:\n• Verify the API key (use ✅ Check Key first)\n• Check the model name\n• NVIDIA CORS may block some models from browser — use ✅ Check Key for reliable testing`);
+            showToast('Request failed', '❌');
+        } finally {
+            setBtns(false);
+        }
+    }
+
+    // ── AUTO-CHECK ────────────────────────────────────────────────────────────
+    function getModelsToCheck() {
+        return nvidiaOnly.checked ? modelCatalog.filter(m => m.provider === 'NVIDIA') : [...modelCatalog];
+    }
+    function updateModelCountLabel() {
+        const c = getModelsToCheck().length;
+        modelCountLabel.textContent = `${c} model${c!==1?'s':''} for auto‑check`;
+    }
+    nvidiaOnly.addEventListener('change', updateModelCountLabel);
+
+    async function startAutoCheck() {
+        if (isAutoChecking) return;
+        const apiKey = apiKeyInput.value.trim();
+        const prompt = promptInput.value.trim() || 'Hello, this is a test.';
+        if (!apiKey) { showToast('Enter your NVIDIA API key', '⚠️'); apiKeyInput.focus(); return; }
+        const models = getModelsToCheck();
+        if (!models.length) { showToast('No models selected', '⚠️'); return; }
+
+        isAutoChecking = true;
+        autoCheckAbortController = new AbortController();
+        const signal = autoCheckAbortController.signal;
+
+        setBtns(true);
+        stopAutoBtn.style.display = 'inline-flex';
+        progressContainer.style.display = 'block';
+        progressText.style.display = 'block';
+        hideResponse();
+        setStatus('checking', `Auto‑checking ${models.length} models…`);
+
+        let completed = 0, results = [];
+        const total = models.length;
+
+        function updateProgress() {
+            const pct = Math.round((completed / total) * 100);
+            progressBar.style.width = pct + '%';
+            progressText.textContent = `${completed} / ${total} (${pct}%)`;
+        }
+        updateProgress();
+
+        const wrap = document.createElement('div');
+        wrap.innerHTML = '<strong>Auto‑Check Results</strong><br><small>Model, status, and response time.</small>';
+        const table = document.createElement('table');
+        table.className = 'auto-results-table';
+        table.innerHTML = `<thead><tr><th>Model</th><th>Status</th><th>ms</th><th>Note</th></tr></thead><tbody></tbody>`;
+        wrap.appendChild(table);
+        showResponse('', wrap);
+
+        for (const m of models) {
+            if (signal.aborted) break;
+            const t0 = performance.now();
+            let status = 'pending', note = '';
+            try {
+                await callNvidiaAPI(apiKey, m.name, [{ role:'user', content:prompt }], 5);
+                status = 'success';
+            } catch(e) {
+                status = 'fail';
+                note = e.message.substring(0, 60);
+            }
+            const ms = Math.round(performance.now() - t0);
+            results.push({ model:m.name, status, ms, note });
+            completed++;
+            updateProgress();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="model-name">${m.name}</td>
+                <td class="${status==='success'?'status-success':'status-fail'}">${status==='success'?'✅ OK':'❌ Fail'}</td>
+                <td>${ms}</td>
+                <td style="font-size:0.7rem;color:var(--stone-500);">${note||'—'}</td>`;
+            table.querySelector('tbody').appendChild(tr);
+            responseArea.scrollTop = responseArea.scrollHeight;
+        }
+
+        const ok = results.filter(r => r.status==='success').length;
+        if (signal.aborted) {
+            setStatus('error', 'Auto‑check stopped');
+            showToast('Stopped', '⏹️');
+        } else {
+            setStatus(ok>0?'success':'error', `Auto‑check done: ${ok}/${results.length} succeeded`);
+            showToast(`${ok} working models`, ok>0?'✅':'❌');
+        }
+        isAutoChecking = false;
+        autoCheckAbortController = null;
+        stopAutoBtn.style.display = 'none';
+        progressContainer.style.display = 'none';
+        progressText.style.display = 'none';
+        setBtns(false);
+    }
+
+    function stopAutoCheck() {
+        if (autoCheckAbortController) autoCheckAbortController.abort();
+    }
+
+    function setBtns(disabled) {
+        checkKeyBtn.disabled = disabled;
+        sendPromptBtn.disabled = disabled;
+        autoCheckBtn.disabled = disabled;
+    }
+
+    function clearAll() {
+        apiKeyInput.value = '';
+        modelInput.value = 'meta/llama-3.1-8b-instruct';
+        promptInput.value = '';
+        hideResponse();
+        hideStatus();
+        currentSelectedModel = 'meta/llama-3.1-8b-instruct';
+        stopAutoCheck();
+        progressContainer.style.display = 'none';
+        progressText.style.display = 'none';
+        showToast('Cleared', '🗑️');
+    }
+
+    // ── Modal ─────────────────────────────────────────────────────────────────
+    function renderModelList(filter='') {
+        const fl = filter.toLowerCase().trim();
+        const filtered = fl ? modelCatalog.filter(m => m.name.toLowerCase().includes(fl) || m.provider.toLowerCase().includes(fl)) : modelCatalog;
+        const grouped = {};
+        filtered.forEach(m => { (grouped[m.provider] = grouped[m.provider]||[]).push(m); });
+        const providers = Object.keys(grouped).sort((a,b) => a==='NVIDIA'?-1:b==='NVIDIA'?1:a.localeCompare(b));
+        let html = '';
+        providers.forEach(p => {
+            html += `<div class="provider-group"><div class="provider-header">${p} <span style="font-weight:400;font-size:0.7rem;">(${grouped[p].length})</span></div><div class="model-chips">`;
+            grouped[p].forEach(m => {
+                const sel = currentSelectedModel === m.name;
+                html += `<span class="model-chip${sel?' selected-chip':''}" data-model="${m.name.replace(/"/g,'&quot;')}">${m.name}</span>`;
+            });
+            html += `</div></div>`;
+        });
+        if (!html) html = `<div class="no-results">😕 No models matching "<strong>${filter}</strong>"</div>`;
+        modalBody.innerHTML = html;
+        modalBody.querySelectorAll('.model-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const name = chip.getAttribute('data-model');
+                modelInput.value = name;
+                currentSelectedModel = name;
+                closeModal();
+                showToast(`Model: ${name}`, '🤖');
+            });
+        });
+    }
+    function openModal() {
+        modalOverlay.classList.remove('hidden');
+        modalSearchInput.value = '';
+        currentSelectedModel = modelInput.value.trim() || null;
+        renderModelList('');
+        modalSearchInput.focus();
+        document.body.style.overflow = 'hidden';
+    }
+    function closeModal() {
+        modalOverlay.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    // ── Event listeners ───────────────────────────────────────────────────────
+    checkKeyBtn.addEventListener('click', checkApiKey);
+    sendPromptBtn.addEventListener('click', sendPrompt);
+    autoCheckBtn.addEventListener('click', startAutoCheck);
+    stopAutoBtn.addEventListener('click', stopAutoCheck);
+    clearBtn.addEventListener('click', clearAll);
+    showModelsBtn.addEventListener('click', openModal);
+    modalCloseBtn.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+    modalSearchInput.addEventListener('input', () => renderModelList(modalSearchInput.value));
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && !modalOverlay.classList.contains('hidden')) { closeModal(); return; }
+        if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') { e.preventDefault(); sendPrompt(); }
+        if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'K') { e.preventDefault(); checkApiKey(); }
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    modelInput.value = 'meta/llama-3.1-8b-instruct';
+    currentSelectedModel = 'meta/llama-3.1-8b-instruct';
+    updateModelCountLabel();
+    console.log('%c🟢 NVIDIA API Explorer Ready','font-weight:bold;color:#76b900;');
+    console.log('%c✅ Check Key → /api/check (server-side 6-method fallback)','color:#5a9e00;');
+    console.log('%cCtrl+Enter = Send Prompt  |  Ctrl+Shift+K = Check Key','color:#888;');
+})();
+</script>
+</body>
+</html>
