@@ -117,7 +117,6 @@
         .header h1 { font-size:1.75rem;font-weight:700;color:var(--stone-900);letter-spacing:-0.3px; }
         .header .subtitle { font-size:0.9rem;color:var(--stone-600);font-weight:500; }
 
-        /* Backend badge */
         .backend-badge {
             display:inline-flex;align-items:center;gap:5px;
             background:rgba(118,185,0,0.12);border:1px solid rgba(118,185,0,0.3);
@@ -209,7 +208,6 @@
         .response-meta { font-size:0.75rem;color:var(--stone-500);margin-bottom:10px;display:flex;gap:14px;flex-wrap:wrap; }
         @keyframes fadeSlideIn { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
 
-        /* Log panel */
         .log-panel {
             margin-top:12px;
             background:rgba(30,25,20,0.88);
@@ -229,7 +227,6 @@
         .log-line.detail { color:#8a7f72; }
         .log-line.done   { color:#b08fff;font-weight:bold; }
 
-        /* Verdict card */
         .verdict-card {
             display:flex;align-items:flex-start;gap:14px;
             padding:16px 18px;border-radius:var(--radius-md);
@@ -243,7 +240,6 @@
         .verdict-body p  { font-size:0.82rem;color:var(--stone-700);line-height:1.5; }
         .verdict-body code { font-family:'SF Mono','Cascadia Code',monospace;font-size:0.8rem;background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:4px; }
 
-        /* Auto-check table */
         .auto-results-table { width:100%;border-collapse:collapse;margin-top:10px;font-size:0.8rem; }
         .auto-results-table th,.auto-results-table td { padding:8px 10px;text-align:left;border-bottom:1px solid rgba(200,180,155,0.3); }
         .auto-results-table th { background:rgba(255,255,255,0.45);font-weight:700;color:var(--stone-700);position:sticky;top:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px); }
@@ -258,7 +254,6 @@
         .spinner-dark { border-color:rgba(150,120,80,0.3);border-top-color:var(--stone-700); }
         @keyframes spin { to{transform:rotate(360deg);} }
 
-        /* Modal */
         .modal-overlay { position:fixed;inset:0;background:rgba(40,30,20,0.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1000;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease-out;padding:20px; }
         .modal-overlay.hidden { display:none; }
         @keyframes fadeIn { from{opacity:0;}to{opacity:1;} }
@@ -294,7 +289,7 @@
             .model-chip { font-size:0.74rem;padding:6px 10px; }
         }
 
-        /* ── Advanced controls (new from A) ───────────────────── */
+        /* Advanced controls */
         .advanced-toggle {
             display: flex; align-items: center; gap: 8px;
             font-size: 0.82rem; color: var(--stone-700); cursor: pointer;
@@ -366,7 +361,7 @@
         </div>
     </div>
 
-    <!-- ⚙️ Advanced parameters (inserted from A) -->
+    <!-- Advanced parameters -->
     <div class="advanced-toggle" id="advancedToggle">
         <span>⚙️ Advanced settings</span>
         <span id="advancedArrow">▼</span>
@@ -610,7 +605,7 @@
     const modalCloseBtn    = $('modalCloseBtn');
     const toast            = $('toast');
 
-    // ── Advanced controls refs (new from A) ─────────────────────────────────
+    // Advanced controls
     const advancedToggle   = $('advancedToggle');
     const advancedPanel    = $('advancedPanel');
     const advancedArrow    = $('advancedArrow');
@@ -626,12 +621,13 @@
     let autoCheckAbortController = null;
     let isAutoChecking = false;
 
-    // ── Advanced panel toggle & sync (A) ────────────────────────────────────
+    // ── Advanced panel toggle ─────────────────────────────────────────────────
     advancedToggle.addEventListener('click', () => {
         advancedPanel.classList.toggle('visible');
         advancedArrow.textContent = advancedPanel.classList.contains('visible') ? '▲' : '▼';
     });
 
+    // Sync temperature slider <-> number
     function syncTemp(source, value) {
         const v = parseFloat(value);
         if (isNaN(v)) return;
@@ -683,7 +679,7 @@
     }
     function hideResponse() { responseArea.classList.remove('visible'); }
 
-    // ── Log helpers ──────────────────────────────────────────────────────────
+    // ── Log utilities ────────────────────────────────────────────────────────
     function logClass(line) {
         const l = line.trimStart();
         if (l.startsWith('OK'))   return 'ok';
@@ -707,7 +703,7 @@
         return panel;
     }
 
-    // New from A: request/response log builder
+    // New: Build request/response log for direct calls
     function buildRequestLog(url, headers, body, response, timing) {
         const lines = [];
         lines.push('─── Request ───────────────────────────────');
@@ -717,6 +713,7 @@
         lines.push('');
         lines.push('─── Response ──────────────────────────────');
         lines.push(`Status: ${response.status} ${response.statusText}`);
+        // headers is Headers object, convert
         const respHeaders = {};
         response.headers.forEach((v,k) => respHeaders[k] = v);
         lines.push(`Headers: ${JSON.stringify(respHeaders)}`);
@@ -762,7 +759,7 @@
         return card;
     }
 
-    // ── CHECK KEY — enhanced with advanced params (A) ────────────────────────
+    // ── CHECK KEY ─────────────────────────────────────────────────────────────
     async function checkApiKey() {
         const apiKey = apiKeyInput.value.trim();
         if (!apiKey) { showToast('Enter your NVIDIA API key first', '⚠️'); apiKeyInput.focus(); return; }
@@ -772,6 +769,7 @@
         responseTime.textContent = '';
         setBtns(true);
 
+        // Optionally include model and temperature if user filled them
         const model = modelInput.value.trim() || undefined;
         const temperature = getTemperature();
         const maxTokens = getMaxTokens();
@@ -823,7 +821,7 @@
         }
     }
 
-    // ── SEND PROMPT — with full logging and advanced params (A) ──────────────
+    // ── SEND PROMPT (with full logging) ──────────────────────────────────────
     async function callNvidiaAPI(apiKey, model, messages, maxTokens, temperature, timeoutSec) {
         const urls = [
             'https://api.nvidia.com/v1/chat/completions',
@@ -855,20 +853,11 @@
                 clearTimeout(timeoutId);
                 if (!res.ok) {
                     const msg = data.error?.message || data.message || `HTTP ${res.status}`;
-                    const logLines = buildRequestLog(url, headers, body, {
-                        status: res.status,
-                        statusText: msg,
-                        headers: res.headers,
-                        _body: JSON.stringify(data)
-                    }, elapsed);
+                    const logLines = buildRequestLog(url, headers, body, {status: res.status, statusText: msg, headers: res.headers, _body: JSON.stringify(data)}, elapsed);
                     throw { message: msg, log: logLines };
                 }
-                const logLines = buildRequestLog(url, headers, body, {
-                    status: res.status,
-                    statusText: 'OK',
-                    headers: res.headers,
-                    _body: JSON.stringify(data)
-                }, elapsed);
+                // success – return data plus log
+                const logLines = buildRequestLog(url, headers, body, {status: res.status, statusText: 'OK', headers: res.headers, _body: JSON.stringify(data)}, elapsed);
                 return { data, log: logLines };
             } catch(e) {
                 clearTimeout(timeoutId);
@@ -926,7 +915,7 @@
         }
     }
 
-    // ── AUTO-CHECK (uses advanced settings) ─────────────────────────────────
+    // ── AUTO-CHECK (uses advanced settings) ──────────────────────────────────
     function getModelsToCheck() {
         return nvidiaOnly.checked ? modelCatalog.filter(m => m.provider === 'NVIDIA') : [...modelCatalog];
     }
@@ -969,7 +958,7 @@
         updateProgress();
 
         const wrap = document.createElement('div');
-        wrap.innerHTML = '<strong>Auto‑Check Results</strong><br><small>Model, status, and response time.</small>';
+        wrap.innerHTML = '<strong>Auto‑Check Results</strong><br><small>Model, status, response time.</small>';
         const table = document.createElement('table');
         table.className = 'auto-results-table';
         table.innerHTML = `<thead><tr><th>Model</th><th>Status</th><th>ms</th><th>Note</th></tr></thead><tbody></tbody>`;
@@ -981,7 +970,7 @@
             const t0 = performance.now();
             let status = 'pending', note = '';
             try {
-                await callNvidiaAPI(apiKey, m.name, [{ role:'user', content:prompt }], maxTokens, temperature, timeout);
+                const result = await callNvidiaAPI(apiKey, m.name, [{ role:'user', content:prompt }], maxTokens, temperature, timeout);
                 status = 'success';
             } catch(e) {
                 status = 'fail';
@@ -1039,7 +1028,7 @@
         showToast('Cleared', '🗑️');
     }
 
-    // ── Modal (unchanged) ────────────────────────────────────────────────────
+    // ── Modal ─────────────────────────────────────────────────────────────────
     function renderModelList(filter='') {
         const fl = filter.toLowerCase().trim();
         const filtered = fl ? modelCatalog.filter(m => m.name.toLowerCase().includes(fl) || m.provider.toLowerCase().includes(fl)) : modelCatalog;
@@ -1102,6 +1091,8 @@
     currentSelectedModel = 'meta/llama-3.1-8b-instruct';
     updateModelCountLabel();
     console.log('%c🟢 NVIDIA API Explorer Ready','font-weight:bold;color:#76b900;');
+    console.log('%c✅ Check Key → /api/check (server-side 6-method fallback)','color:#5a9e00;');
+    console.log('%cCtrl+Enter = Send Prompt  |  Ctrl+Shift+K = Check Key','color:#888;');
 })();
 </script>
 </body>
