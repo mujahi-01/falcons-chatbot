@@ -4,7 +4,7 @@
   "outputDirectory": "public",
   "functions": {
     "api/check.py": {
-      "runtime": "@vercel/python@3.0.0",
+      "runtime": "@vercel/python@4.1.0",
       "maxDuration": 25
     }
   },
